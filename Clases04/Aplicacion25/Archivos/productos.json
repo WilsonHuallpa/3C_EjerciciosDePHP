@@ -1,0 +1,25 @@
+[
+{
+    "codigo":"222222",
+    "nombre":"yogur",
+    "tipo":"lacteo",
+    "stock":"63",
+    "precio":"200",
+    "id":1111
+},
+{
+    "codigo":"444444",
+    "nombre":"queso",
+    "tipo":"lacteo",
+    "stock":"68",
+    "precio":"220",
+    "id":2222
+},
+
+{   "codigo":"888888",
+    "nombre":"leche",
+    "tipo":"lacteo",
+    "stock":"24",
+    "precio":"250",
+    "id":333
+}]

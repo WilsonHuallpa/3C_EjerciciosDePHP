@@ -1,0 +1,11 @@
+vinparram le estas pasando al puntero de una variable.
+vimvalue le estas pasando lo valores de la variable.
+
+validar datos antes de llamar la funcionde sql
+
+$sentencia = $pdo->prepare('SELECT * FROM tabla WHERE ID = :id');
+$sentencia->bindParam(':id', $var, PDO::PARAM_INT);
+$sentencia->execute();
+// Mostrar errores
+$sentencia>errorInfo();
+
