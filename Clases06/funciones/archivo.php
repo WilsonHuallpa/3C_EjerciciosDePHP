@@ -78,20 +78,20 @@ var_dump($arrayVenta);
 
 //H. Obtener la cantidad total de un producto (ejemplo:1003) vendido por un usuario(ejemplo: 104).
 
-
+/*
 $array = venta::filtarTotalProductoVendidoPorUsuario(1005,105);
 
 var_dump($array);
-
+*/
 
 //I. Obtener todos los números de los productos vendidos por algún usuario filtrado por localidad (ejemplo: ‘Avellaneda’).
-/*
+
 $localidad = "Avellaneda";
 
-$array = venta::filtarProductoPorLocalidad("Avellaneda");
+$array = venta::filtarProductoPorLocalidad($localidad);
 
 
-var_dump($array);*/
+var_dump($array);
 
 /*
 $arrayVenta = venta::MostrarVentaEntreFechas("2020-07-19","2021-04-25");
