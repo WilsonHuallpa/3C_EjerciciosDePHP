@@ -9,13 +9,15 @@ function BorrarVenta($numeroPedido){
     $retorno = "No se encuentra el elemento";
     $venta =  venta::TraerVenta($numeroPedido);
 
+    var_dump($venta);
     if($venta != false){
 
         if(is_file($venta->imagen)){
 
-            if($venta->MoverArchivoImagen("BACKUPVENTAS/")){
+            if(Archivo::MoverArchivoImagen("BACKUPVENTAS/" , $venta->imagen)){
 
-                venta::BorrarVenta($numeroPedido);
+                venta::BorrarVenta($venta);
+            
                 $retorno = "Se borro corectamente.";
             }else{
                 $retorno = "Error.. al mover el archivo..";

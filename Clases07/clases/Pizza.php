@@ -28,21 +28,7 @@ class pizza{
         fclose($archivo);
     }
 
-
-    public static function LeerJson($ruta, &$array){
-
-        if(file_exists($ruta)){
-            $data = file_get_contents($ruta);
-            if($array = json_decode($data,true)){
-                return true;
-            }else{
-                echo "Error..  no se puede decodificar";
-            }
-        }
-        return false;
-    }
-
-    public function VerificarYModificar(&$arrayPizza){
+    public function ActualizarProducto(&$arrayPizza){
     
         foreach($arrayPizza as &$prod){
             if($prod["sabor"] == $this->sabor && $prod["tipo"] == $this->tipo){

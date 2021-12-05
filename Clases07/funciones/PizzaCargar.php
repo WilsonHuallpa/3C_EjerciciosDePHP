@@ -1,12 +1,13 @@
 <?php
 require_once "clases/Pizza.php";
 
+
 function PizzaCarga($sabor, $precio, $tipo, $cantidad, $file ){
 
     $ruta = "archivos/Pizza.json";
     $dir_subida = 'ImagenesDePizzas/';
 
-    $pizza = new pizza($sabor, $precio, $tipo,$cantidad);
+    $pizza = new Pizza($sabor, $precio, $tipo, $cantidad);
 
     $array = array();
 
@@ -14,9 +15,9 @@ function PizzaCarga($sabor, $precio, $tipo, $cantidad, $file ){
 
         $item = end($array);
         $item_id = $item['id'];
-
         $pizza->id = ++$item_id;
-        if($pizza->VerificarYModificar($array)){
+
+        if($pizza->ActualizarProducto($array)){
             $aux = json_encode($array,true);
             $retorno = "se modifico";
         }else{

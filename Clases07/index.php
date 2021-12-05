@@ -1,19 +1,30 @@
 <?php
 
-require_once "funciones/ModificarVenta.php";
+
+
 require_once "funciones/borraVenta.php";
 require_once "funciones/CunsultarVenta.php";
-
-
 require_once "funciones/PizzaCargar.php";
 require_once "funciones/PizzaConsultar.php";
 require_once "funciones/AltaDeVenta.php";
+require_once "funciones/DevolverPizza.php";
+require_once "funciones/ConsultaCupones.php";
+require_once "funciones/ConsultasDevolucion.php";
+require_once "funciones/ConsultasEspeciales.php";
+require_once "funciones/ModificarDevolucion.php";
+require_once "funciones/borraVenta.php";
+
+
+
+require_once 'bd.php';
+require_once "clases/Archivo.php";
+
 
 $method = $_SERVER['REQUEST_METHOD'];
 
 
 switch ($method) {
-
+  
     case 'GET':
         $metodo = $_GET['metodo'];
         switch($metodo){
@@ -29,15 +40,46 @@ switch ($method) {
             case "ListaPorSabor":
                 listadoDeVentasPorSabor("agrio");
                 break;
+            case "ListarCuponPorEstados":
+                ListarCuponesYsuEstado();
+            break;
+            case "ListarCuponPorUsuario":
+                ListarCuponesPorUsuario();
+            break;
+            case "ListarCuponPorFecha":
+                ListarCuponesFecha("2021-11-22");
+            break;
+            case "ListarDevolucionPorEstados":
+                ListarDevolucionesCupones();
+            break;
+            case "ListarDevolucionPorUsuario":
+                ListarDevolucionesPorUsurio();
+            break;
+            case "ListarDevolucionPorFecha":
+                ListarDevolucionesFecha("2021-11-25");
+            break;
+            case "ListarLasVentasBorradas":
+                ListarLasVentasBorradas();
+            break;
+            case "MostrarImagenes":
+                if(isset($_GET['parametro'])){
+                    MostrarImagenes($_GET['parametro']);
+                }
+            break;
+            case "ListarDevolucionyCupones":
+                
+                ListarDevolucionyCupones();
+                
+            break;
         }
         break;
 
     case 'POST':
         $metodo = $_POST['metodo'];
         switch($metodo){
-            case 'AltasDeVentas':
-                if(isset($_POST['mail']) && isset($_POST['sabor']) && isset($_POST['tipo']) && isset($_POST['cantidad']) && isset($_POST['cupon']) &&   $_FILES["archivo"] ["error"] == 0){
-                    AltaDeVenta($_POST['mail'],$_POST['sabor'],$_POST['tipo'],$_POST['cantidad'],$_FILES["archivo"], $_POST['cupon']);
+            case 'altaVenta':
+                if(isset($_POST['usuario']) && isset($_POST['mail']) && isset($_POST['sabor']) && isset($_POST['tipo']) && isset($_POST['cantidad']) &&   $_FILES["archivo"] ["error"] == 0){
+                    AltaDeVenta($_POST['usuario'],$_POST['mail'],$_POST['sabor'],$_POST['tipo'],$_POST['cantidad'],$_FILES["archivo"]);
                 }else{
                     echo "Erro... no se encuetra algunos valores";
                 }
@@ -54,10 +96,21 @@ switch ($method) {
 
                 break;
             case "cargar";
-
+            
                 if(isset($_POST['sabor']) && isset($_POST['precio']) && isset($_POST['tipo'])&& isset($_POST['cantidad']) && $_FILES["archivo"] ["error"] == 0){
 
                     PizzaCarga($_POST['sabor'],$_POST['precio'],$_POST['tipo'],$_POST['cantidad'],$_FILES["archivo"]);
+
+                }else{
+                    echo "Erro... no se encuetra algunos valores";
+                }
+                break;
+            case "devolucion";
+            
+                if(isset($_POST['usuario']) && isset($_POST['numero']) && isset($_POST['causa']) && $_FILES["imagen"] ["error"] == 0){
+
+                    DevolverPizza( $_POST['usuario'],$_POST['numero'],$_POST['causa'],$_FILES["imagen"]);
+
                 }else{
                     echo "Erro... no se encuetra algunos valores";
                 }
@@ -73,10 +126,15 @@ switch ($method) {
 
         parse_str(file_get_contents('php://input'), $_PUT);
 
-        if(isset($_PUT['numeroPedido']) && isset($_PUT['mail']) && isset($_PUT['sabor']) && isset($_PUT['tipo']) && isset($_PUT['cantidad'])){ 
+        if(isset($_PUT['numeroPedido']) && isset($_PUT['usuario']) && isset($_PUT['causa'])){ 
 
-            $retorno = ModificarVenta($_PUT['numeroPedido'],$_PUT['mail'],$_PUT['sabor'],$_PUT['tipo'],$_PUT['cantidad']);
-            echo $retorno;
+            $retorno = ModificarDevolucion($_PUT['numeroPedido'],$_PUT['usuario'], $_PUT['causa']);
+            if($retorno != -1){
+                echo "Se modifico la devolucion.";
+
+            }else{
+                echo "no se pudo modificar";
+            }
         }else{
             echo "Error.. no se encuentra algunos valores..";
         }
@@ -99,23 +157,5 @@ switch ($method) {
     
 
 }
-
-
-
-
-5- (2 pts.)DevolverPizza.php Guardar en el archivo (devoluciones.json y cupones.json):
-a-Se ingresa el número de pedido y la causa de la devolución. El número de pedido debe existir, se ingresa una
-foto del cliente enojado,esto debe generar un cupón de descuento con el 10% de descuento para la próxima
-compra.
-6- (2 pts.)ConsultasDevoluciones.php:-
-a-Listar las devoluciones con sus cupones.
-b-Listar las devoluciones ordenadas por usuarios.
-c-Listar las devoluciones ordenadas por fecha.
-
-7- (2 pts.)ConsultasCuponesz.php:-
-a-Listar todos los cupones y su estado.
-b-Listar todos los cupones ordenados por usuarios.
-b-Listar todos los cupones por fecha, desde una fecha en particular.
-
 
 ?>

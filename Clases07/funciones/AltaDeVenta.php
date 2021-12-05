@@ -1,47 +1,50 @@
 <?php
- 
- /*4- (2 pts.) AltaVenta.php, ...( continuación)Todo lo anterior más...
- a-Debe recibir un cupón de descuento, se verifica que exista y que no esté usado, (si existe) y guardar el importe
- final y el descuento aplicado en la venta.
- b-Debe marcarse el cupón como ya usado.*/
-
-    require_once 'bd.php';
-    require_once 'clases/Pizza.php';
     require_once 'clases/Venta.php';
 
-    function AltaDeVenta($mail,$sabor,$tipo,$cantidad,$file, $cupon_id){
+    function AltaDeVenta($usuario, $mail,$sabor,$tipo,$cantidad,$file){
 
-        $nuevaVenta = new venta();
-        $nuevaVenta->mail=$mail;
-        $nuevaVenta->sabor=$sabor;
-        $nuevaVenta->tipo=$tipo;
-        $nuevaVenta->cantidad=$cantidad;
-        $nuevaVenta->numeroPedido= rand(100,500);
-        $nuevaVenta->fecha = date("Y/m/d");
-        $nuevaVenta->descuento = $cupon_id;
-        $dir_subida = 'ImagenesDeLaVenta/fotos/';
-        $arrayPizza = array();
+        try{
+            $nuevaVenta = new venta();
+            $nuevaVenta->usuario=$usuario;
+            $nuevaVenta->mail=$mail;
+            $nuevaVenta->sabor=$sabor;
+            $nuevaVenta->tipo=$tipo;
+            $nuevaVenta->cantidad=$cantidad;
+            $nuevaVenta->numeroPedido= rand(100,500);
+            $nuevaVenta->fecha = date("Y/m/d");
 
-            if(pizza::LeerJson("Archivos/Pizza.json",$arrayPizza)){
+            $dir_subida = 'ImagenesDeLaVenta/';
+            $arrayCupon = array();
+            $arrayPizza = array();
+    
+            Archivo::LeerJson("Archivos/Pizza.json",$arrayPizza);
+            Archivo::LeerJson("Archivos/cupones.json",$arrayCupon);
 
-            $retorno=$nuevaVenta->VerificarSiExiteYDescontarStock($arrayPizza);
+    
+            $index=Venta::VerificarSiExiteProducto($arrayPizza ,$nuevaVenta);
 
-            if($retorno == 1){
+            $precioProcto=$nuevaVenta->DescontarStock($arrayPizza, $index);
 
-                $aux = json_encode($arrayPizza,true);
-                pizza::GuardarJSON("Archivos/Pizza.json",$aux);
 
-                $UltimoId=$nuevaVenta->InsertarElVentaParametros();
-                
-                $nuevaVenta->SubirAchivo($dir_subida,$file);
-                echo "Ingresado un producto nuevo numero: ", $UltimoId ,"\n";
-                
+            $retorno = $nuevaVenta->AplicarDescuento($precioProcto, $arrayCupon);
+
+            $aux = json_encode($arrayPizza,true);
+            Archivo::GuardarJSON("Archivos/Pizza.json",$aux);
+            $nuevaVenta->SubirAchivo($dir_subida,$file);
+
+            $UltimoId=$nuevaVenta->InsertarElVentaParametros();
+
+            if($retorno == 1){  
+                $auxcupon = json_encode($arrayCupon,true);
+                Archivo::GuardarJSON("Archivos/cupones.json",$auxcupon);
+                echo " Ingresado un producto Con descuento nuevo numero: ", $UltimoId ,"\n";
             }else if($retorno == 0){
-                echo "no tiene estock el producto";
-            } else {
-                echo "no exite el producto";
-            }
-            
+                echo "Cupo ya usado. Ingreso un producto nuevo numero: ", $UltimoId ,"\n";
+            } 
+                
+        }catch(Exception $e) {
+            $payload = json_encode(array('error' => $e->getMessage()));
+            echo $payload;
         }
 
     }

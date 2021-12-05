@@ -3,6 +3,8 @@
 
 class venta{
 
+    public $id;
+    public $usuario;
     public $mail;
     public $sabor;
     public $tipo;
@@ -28,70 +30,68 @@ class venta{
        return false;
     }
 
-    public function VerificarSiExiteYDescontarStock(&$arrayProd){
+    public function DescontarStock(&$arrayProd, $idProducto){
         
-        $retorno = -1;
         foreach ($arrayProd as &$prod) {
-            if($prod["sabor"] === $this->sabor && $prod["tipo"] === $this->tipo){
-                
+            if($prod["id"] === $idProducto){
                 if($prod["cantidad"] >= $this->cantidad){
-
                     $prod["cantidad"]=($prod["cantidad"]-$this->cantidad);
-
-                   if(venta::CuponDescuento($this->descuento)){
-                        $total =  $this->cantidad * $prod["precio"];
-                        $this->total = $total - ($total/10);
-                        $retorno = 1;
-                   }else{
-                        $total =  $this->cantidad * $prod["precio"];
-                   }
-                    
+                    return $prod['precio'];
                 }else{
-                    $retorno = 0;
+                    throw new Exception('No tiene estock el producto');
                 }
             }
         }
         return $retorno;
     }
 
-    public  static function CuponDescuento($id_descuento){
-
-        $array = array();
-        if(venta::LeerJson("Archivos/cupon.json", $array)){
-
-            foreach ($array as $value) {
-                
-                if($value['id'] == $id_descuento){
-                    return $value['cupon'];
-                }
-            }
-            echo "no exite el cupon  ";
-            return false;
-        }
-    }
-
-
-    public static function GuardarJSON($ruta,$aux){
-        $archivo = fopen($ruta,'w');
-        if(fwrite($archivo,$aux) > 0){
-            return true;
-        }
-        fclose($archivo);
-    }
-
-
-    public static function LeerJson($ruta, &$array){
-
-        if(file_exists($ruta)){
-            $data = file_get_contents($ruta);
-            if($array = json_decode($data,true)){
-                return true;
-            }else{
-                echo "Error..  no se puede decodificar";
+    public static function VerificarSiExiteProducto($arrayProd , $unaVenta){
+        
+        foreach ($arrayProd as  $key => $prod) {
+            if($prod["sabor"] === $unaVenta->sabor && $prod["tipo"] === $unaVenta->tipo){
+               return $prod["id"];
             }
         }
-        return false;
+        throw new Exception('Error..  no se encontro el producto');
     }
+
+
+    public  function AplicarDescuento($precioPro , &$arrayCupon){
+
+        $retorno = 0;
+        $total= $this->cantidad * $precioPro;
+        $decuento= 0;
+        $totalDecuento = 0;
+        foreach ($arrayCupon as &$value) {
+            if($value['usuario'] == $this->usuario && $value['estado'] == true){
+
+                $descuento = $value["monto"];
+                $totalDecuento = $total - (($total*$descuento)/100);
+                $value['estado'] = false;
+                $retorno = 1;
+            }
+        }
+        if($retorno){
+            $this->total = $totalDecuento;
+            $this->descuento = $descuento;
+        }else{
+            $this->total = $total;
+            $this->descuento = 0;
+        }
+
+        return $retorno;
+    }
+
+    public static function TraerVenta($numeroPedido)
+    {
+             $objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
+             $consulta =$objetoAccesoDato->RetornarConsulta("select id, numeroPedido as numeroPedido, fecha as fecha, tipo as tipo, cantidad as cantidad, sabor as sabor, mail as mail, imagen as imagen , total as total,  descuento as descuento from venta  WHERE numeroPedido = ?");
+            $consulta->execute(array($numeroPedido));	
+            $objeto = $consulta->fetchObject("venta");
+           return $objeto;
+    }
+
+    
 
     public function MostrarDatos(){
 
@@ -101,13 +101,15 @@ class venta{
     public function InsertarElVentaParametros()
     {
                $objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
-               $consulta =$objetoAccesoDato->RetornarConsulta("INSERT into venta (numeroPedido,fecha,tipo,cantidad,sabor,mail,total,descuento )values(:numeroPedido,:fecha,:tipo,:cantidad,:sabor,:mail,:total,:descuento)");
+               $consulta =$objetoAccesoDato->RetornarConsulta("INSERT into venta (numeroPedido,fecha,tipo,cantidad,sabor,mail, usuario, imagen,total,descuento )values(:numeroPedido,:fecha,:tipo,:cantidad,:sabor,:mail,:usuario, :imagen,:total,:descuento)");
                $consulta->bindValue(':numeroPedido',$this->numeroPedido, PDO::PARAM_INT);
                $consulta->bindValue(':fecha', $this->fecha, PDO::PARAM_STR);
                $consulta->bindValue(':tipo', $this->tipo, PDO::PARAM_STR);
                $consulta->bindValue(':cantidad', $this->cantidad, PDO::PARAM_INT);
                $consulta->bindValue(':sabor', $this->sabor, PDO::PARAM_STR);
                $consulta->bindValue(':mail', $this->mail, PDO::PARAM_STR);
+               $consulta->bindValue(':usuario', $this->usuario, PDO::PARAM_STR);
+               $consulta->bindValue(':imagen', $this->imagen, PDO::PARAM_STR);
                $consulta->bindValue(':total', $this->total, PDO::PARAM_INT);
                $consulta->bindValue(':descuento', $this->descuento, PDO::PARAM_INT);
                $consulta->execute();		
@@ -115,19 +117,21 @@ class venta{
     }
 
     public function SubirAchivo($ruta, $file){
-         $Nombre_usuario = explode( '@', $this->mail );
 
-        $nombre_archivo = $this->tipo . $this->sabor . $Nombre_usuario[0] ;
+         $Nombre_usuario = explode( '@', $this->mail );
+         $newDate = date("Y-m-d", strtotime($this->fecha));
+        $nombre_archivo = $this->tipo . $this->sabor . $Nombre_usuario[0] . $newDate;
         $fichero_subido = $ruta . $nombre_archivo . ".jpg";
 
         if (!file_exists($ruta)){
             mkdir($ruta, 0777, true);
         }
-        if (move_uploaded_file($file['tmp_name'], $fichero_subido)) {
-            echo "El fichero es válido y se subió con éxito.\n";
-        } else {
-            echo "¡Posible ataque de subida de ficheros!\n";
-        }
+       if (move_uploaded_file($file['tmp_name'], $fichero_subido)) {
+           $this->imagen = $fichero_subido;
+       } else {
+           echo "¡Posible ataque de subida de ficheros!\n";
+       }
+   
     }
 
     public static function ObteneCantidadDePizzaVendidas($fecha){
@@ -164,29 +168,32 @@ class venta{
 			return $consulta->fetchAll(PDO::FETCH_CLASS, "venta");		
 	}
 
+    public static function ListarVentasBorradas()
+	{
+            $nulo = "NULL";
+			$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
+			$consulta =$objetoAccesoDato->RetornarConsulta("select id, numeroPedido, fecha, tipo, cantidad , sabor , mail, usuario , imagen, total, descuento, fechaBaja from venta WHERE fechaBaja != ?");
+			$consulta->execute(array($nulo));			
+			return $consulta->fetchAll(PDO::FETCH_CLASS, "venta");		
+	}
+
+    public static function ListarVentas()
+	{
+			$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
+			$consulta =$objetoAccesoDato->RetornarConsulta("select id, numeroPedido, fecha, tipo, cantidad , sabor , mail, usuario , imagen, total, descuento, fechaBaja from venta");
+			$consulta->execute();			
+			return $consulta->fetchAll(PDO::FETCH_CLASS, "venta");		
+	}
 
 
-    public static function BorrarVenta($numeroPedido)
+    public static function BorrarVenta($unaVenta)
     {
-
-           $objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
-           $consulta =$objetoAccesoDato->RetornarConsulta("
-               delete 
-               from venta 				
-               WHERE numeroPedido=:numeroPedido");	
-               $consulta->bindValue(':numeroPedido',$numeroPedido, PDO::PARAM_INT);		
-               $consulta->execute();
-               return $consulta->rowCount();
-
-    }
-
-    public static function TraerVenta($numeroPedido)
-    {
-             $objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
-             $consulta =$objetoAccesoDato->RetornarConsulta("select id, numeroPedido as numeroPedido, fecha as fecha, tipo as tipo, cantidad as cantidad, sabor as sabor, mail as mail, imagen as imagen from venta  WHERE numeroPedido = ?");
-            $consulta->execute(array($numeroPedido));	
-            $objeto = $consulta->fetchObject("venta");
-           return $objeto;
+        $objAccesoDato = AccesoDatos::dameUnObjetoAcceso();
+        $consulta = $objAccesoDato->RetornarConsulta("UPDATE venta SET fechaBaja = :fechaBaja WHERE numeroPedido = :numero");
+        $fecha = new DateTime(date("d-m-Y"));
+        $consulta->bindValue(':numero', $unaVenta->numeroPedido, PDO::PARAM_INT);
+        $consulta->bindValue(':fechaBaja', date_format($fecha, 'Y-m-d H:i:s'));
+        $consulta->execute();
     }
 
      public function ModificarVentaParametros()
@@ -207,20 +214,7 @@ class venta{
 			return $consulta->execute();
 	 }
      
-
-    
-     public function  MoverArchivoImagen($ruta){
-
-        $archivo_antiguo = $this->imagen;
-        $nombre_imagen = explode( '/', $archivo_antiguo);
-        $nombre = end($nombre_imagen);
-        $archivo_nuevo = $ruta .  $nombre;
-
-        if (!file_exists($ruta)){
-            mkdir($ruta, 0777, true);
-        }
-        return rename($archivo_antiguo, $archivo_nuevo);
-     }
+     
 
 }
   

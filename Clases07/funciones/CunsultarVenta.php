@@ -1,6 +1,5 @@
 <?php 
 
-require_once 'bd.php';
 require_once 'clases/Venta.php';
 //a- la cantidad de pizzas vendidas en un día en particular, si no se pasa fecha, se muestran las del dia de hoy
 function cantidadPizzaVentidad($fecha = false){
@@ -24,6 +23,7 @@ function ListaVentasPorFehas($fecha1, $fecha2){
     $arrayVenta = venta::TotalProductoVendidosPorFecha($fecha1 ,$fecha2);
 
     if($arrayVenta != false){
+       
         foreach ($arrayVenta as  $venta) {
         
             echo $venta->MostrarDatos();
